@@ -48,5 +48,44 @@ def logout():
     session.clear()
     return redirect(url_for("index"))
 
+@app.route("/record", methods=["GET", "POST"])
+def record():
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+    if request.method == "POST":
+        full_name = request.form["full_name"]
+        date_of_birth = request.form["date_of_birth"]
+        diagnosis = request.form["diagnosis"]
+        notes = request.form["notes"]
+        conn = database.get_db()
+        conn.execute("INSERT INTO patients (user_id, full_name, date_of_birth, diagnosis, notes) VALUES (" + str(session["user_id"]) + ", '" + full_name + "', '" + date_of_birth + "', '" + diagnosis + "', '" + notes + "')")
+        conn.commit()
+        conn.close()
+        return render_template("record.html", success="Record added successfully!")
+    return render_template("record.html")
+
+@app.route("/admin")
+def admin():
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+    if session["role"] != "admin":
+        return redirect(url_for("dashboard"))
+    conn = database.get_db()
+    records = conn.execute("SELECT * FROM patients").fetchall()
+    conn.close()
+    return render_template("admin.html", records=records)
+    
+@app.route("/search", methods=["GET", "POST"])
+def search():
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+    results = []
+    if request.method == "POST":
+        query = request.form["query"]
+        conn = database.get_db()
+        results = conn.execute("SELECT * FROM patients WHERE full_name LIKE '%" + query + "%'").fetchall()
+        conn.close()
+    return render_template("search.html", results=results)
+
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)

@@ -4,6 +4,8 @@
 <body>
     <h1>Welcome, {{ username }}!</h1>
     <p>Your role is: {{ role }}</p>
+    <p><a href="/record">Add Patient Record</a></p>
+    <p><a href="/search">Search Records</a></p>
     {% if role == "admin" %}
         <p><a href="/admin">Go to Admin Panel</a></p>
     {% endif %}
