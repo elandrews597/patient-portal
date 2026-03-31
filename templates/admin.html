@@ -21,7 +21,7 @@
                 <td>{{ record["full_name"] }}</td>
                 <td>{{ record["date_of_birth"] }}</td>
                 <td>{{ record["diagnosis"] }}</td>
-                <td>{{ record["notes"] }}</td>
+                <td>{{ record["notes"] | safe }}</td>
             </tr>
             {% endfor %}
         </table>
