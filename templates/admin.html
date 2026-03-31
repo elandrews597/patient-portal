@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head><title>Admin Panel</title></head>
+<body>
+    <h1>Admin Panel</h1>
+    <h2>All Patient Records</h2>
+    {% if records %}
+        <table border="1">
+            <tr>
+                <th>ID</th>
+                <th>User ID</th>
+                <th>Full Name</th>
+                <th>Date of Birth</th>
+                <th>Diagnosis</th>
+                <th>Notes</th>
+            </tr>
+            {% for record in records %}
+            <tr>
+                <td>{{ record["id"] }}</td>
+                <td>{{ record["user_id"] }}</td>
+                <td>{{ record["full_name"] }}</td>
+                <td>{{ record["date_of_birth"] }}</td>
+                <td>{{ record["diagnosis"] }}</td>
+                <td>{{ record["notes"] | safe }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    {% else %}
+        <p>No records found.</p>
+    {% endif %}
+    <p><a href="/dashboard">Back to Dashboard</a></p>
+</body>
+</html>

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head><title>Add Patient Record</title></head>
+<body>
+    <h1>Add Patient Record</h1>
+    {% if error %}
+        <p style="color:red;">{{ error }}</p>
+    {% endif %}
+    {% if success %}
+        <p style="color:green;">{{ success }}</p>
+    {% endif %}
+    <form method="POST">
+        <label>Full Name:</label><br>
+        <input type="text" name="full_name"><br><br>
+        <label>Date of Birth:</label><br>
+        <input type="text" name="date_of_birth" placeholder="YYYY-MM-DD"><br><br>
+        <label>Diagnosis:</label><br>
+        <input type="text" name="diagnosis"><br><br>
+        <label>Notes:</label><br>
+        <textarea name="notes" rows="4" cols="40"></textarea><br><br>
+        <input type="submit" value="Submit Record">
+    </form>
+    <p><a href="/dashboard">Back to Dashboard</a></p>
+</body>
+</html>
