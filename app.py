@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, session
+from werkzeug.security import generate_password_hash, check_password_hash
 import database
 
 app = Flask(__name__)
@@ -13,8 +14,9 @@ def register():
     if request.method == "POST":
         username = request.form["username"]
         password = request.form["password"]
+        hashed_password = generate_password_hash(password)
         conn = database.get_db()
-        conn.execute("INSERT INTO users (username, password, role) VALUES ('" + username + "', '" + password + "', 'patient')")
+        conn.execute("INSERT INTO users (username, password, role) VALUES (?, ?, 'patient')", (username, hashed_password))
         conn.commit()
         conn.close()
         return redirect(url_for("login"))
@@ -26,9 +28,9 @@ def login():
         username = request.form["username"]
         password = request.form["password"]
         conn = database.get_db()
-        user = conn.execute("SELECT * FROM users WHERE username = '" + username + "' AND password = '" + password + "'").fetchone()
+        user = conn.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
         conn.close()
-        if user:
+        if user and check_password_hash(user["password"], password):
             session["user_id"] = user["id"]
             session["username"] = user["username"]
             session["role"] = user["role"]
@@ -58,7 +60,7 @@ def record():
         diagnosis = request.form["diagnosis"]
         notes = request.form["notes"]
         conn = database.get_db()
-        conn.execute("INSERT INTO patients (user_id, full_name, date_of_birth, diagnosis, notes) VALUES (" + str(session["user_id"]) + ", '" + full_name + "', '" + date_of_birth + "', '" + diagnosis + "', '" + notes + "')")
+        conn.execute("INSERT INTO patients (user_id, full_name, date_of_birth, diagnosis, notes) VALUES (?, ?, ?, ?, ?)", (session["user_id"], full_name, date_of_birth, diagnosis, notes))
         conn.commit()
         conn.close()
         return render_template("record.html", success="Record added successfully!")
@@ -74,7 +76,7 @@ def admin():
     records = conn.execute("SELECT * FROM patients").fetchall()
     conn.close()
     return render_template("admin.html", records=records)
-    
+
 @app.route("/search", methods=["GET", "POST"])
 def search():
     if "user_id" not in session:
@@ -83,7 +85,7 @@ def search():
     if request.method == "POST":
         query = request.form["query"]
         conn = database.get_db()
-        results = conn.execute("SELECT * FROM patients WHERE full_name LIKE '%" + query + "%'").fetchall()
+        results = conn.execute("SELECT * FROM patients WHERE full_name LIKE ?", ('%' + query + '%',)).fetchall()
         conn.close()
     return render_template("search.html", results=results)
 
