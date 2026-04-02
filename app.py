@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, session
+# added hash import from werkzeug security
 from werkzeug.security import generate_password_hash, check_password_hash
 import database
 
@@ -16,6 +17,8 @@ def register():
         password = request.form["password"]
         hashed_password = generate_password_hash(password)
         conn = database.get_db()
+        # Password is now hashed using werkzeug before storing
+        # Parameterized query (?) prevents SQL injection 
         conn.execute("INSERT INTO users (username, password, role) VALUES (?, ?, 'patient')", (username, hashed_password))
         conn.commit()
         conn.close()
@@ -28,8 +31,10 @@ def login():
         username = request.form["username"]
         password = request.form["password"]
         conn = database.get_db()
+        # Used parameterized query to prevent SQL injection authentication bypass
         user = conn.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
         conn.close()
+        # Password is verified against has by comparing hashes using check_password_hash
         if user and check_password_hash(user["password"], password):
             session["user_id"] = user["id"]
             session["username"] = user["username"]
@@ -60,6 +65,7 @@ def record():
         diagnosis = request.form["diagnosis"]
         notes = request.form["notes"]
         conn = database.get_db()
+        # Used parameterized query to prevent SQL injection
         conn.execute("INSERT INTO patients (user_id, full_name, date_of_birth, diagnosis, notes) VALUES (?, ?, ?, ?, ?)", (session["user_id"], full_name, date_of_birth, diagnosis, notes))
         conn.commit()
         conn.close()
@@ -85,6 +91,8 @@ def search():
     if request.method == "POST":
         query = request.form["query"]
         conn = database.get_db()
+        # parameterized query prevents SQL injection
+        # User input is treated as data, not SQL code (' OR '1'='1 will pass as a string not SQL code)
         results = conn.execute("SELECT * FROM patients WHERE full_name LIKE ?", ('%' + query + '%',)).fetchall()
         conn.close()
     return render_template("search.html", results=results)
