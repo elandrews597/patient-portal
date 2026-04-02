@@ -14,6 +14,8 @@ def register():
         username = request.form["username"]
         password = request.form["password"]
         conn = database.get_db()
+        # Password stored in plaintext, not hashes
+        # Code being String allows for SQL injection
         conn.execute("INSERT INTO users (username, password, role) VALUES ('" + username + "', '" + password + "', 'patient')")
         conn.commit()
         conn.close()
@@ -26,6 +28,8 @@ def login():
         username = request.form["username"]
         password = request.form["password"]
         conn = database.get_db()
+        # Strings allow SQL authentication bypass
+        # Password compared in plaintext(should be compared hash)
         user = conn.execute("SELECT * FROM users WHERE username = '" + username + "' AND password = '" + password + "'").fetchone()
         conn.close()
         if user:
@@ -58,6 +62,7 @@ def record():
         diagnosis = request.form["diagnosis"]
         notes = request.form["notes"]
         conn = database.get_db()
+        # String allows for SQL injection
         conn.execute("INSERT INTO patients (user_id, full_name, date_of_birth, diagnosis, notes) VALUES (" + str(session["user_id"]) + ", '" + full_name + "', '" + date_of_birth + "', '" + diagnosis + "', '" + notes + "')")
         conn.commit()
         conn.close()
@@ -83,6 +88,8 @@ def search():
     if request.method == "POST":
         query = request.form["query"]
         conn = database.get_db()
+        # String allows for SQL injection
+        # Attacker can aqcuire all information by using a UNION attack
         results = conn.execute("SELECT * FROM patients WHERE full_name LIKE '%" + query + "%'").fetchall()
         conn.close()
     return render_template("search.html", results=results)
