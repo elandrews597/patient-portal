@@ -1,1 +1,4 @@
 portal.db
+*.pyc
+__pycache__/
+instance/
