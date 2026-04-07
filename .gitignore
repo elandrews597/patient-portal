@@ -1,2 +1,7 @@
 portal.db
+<<<<<<< HEAD
 __pycache__/
+=======
+*.pyc
+instance/
+>>>>>>> 490ad8b9293fc650b6ed9140e51493930218ab90
