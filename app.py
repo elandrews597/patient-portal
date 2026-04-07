@@ -1,3 +1,5 @@
+from logging import exception
+
 from flask import Flask, render_template, request, redirect, url_for, session
 # added hash import from werkzeug security
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -40,9 +42,15 @@ def register():
         conn = database.get_db()
         # Password is now hashed using werkzeug before storing
         # Parameterized query (?) prevents SQL injection 
-        conn.execute("INSERT INTO users (username, password, role) VALUES (?, ?, 'patient')", (username, hashed_password))
-        conn.commit()
-        conn.close()
+        # Error handling added to catch duplicate username and other database errors
+        try:
+            conn.execute("INSERT INTO users (username, password, role) VALUES (?, ?, 'patient')", (username, hashed_password))
+            conn.commit()
+        except Exception as e:
+            print(e)
+            return render_template("error.html", error="Username already exists. Please choose a different one.")
+        finally:
+            conn.close()
         return redirect(url_for("login"))
     return render_template("register.html")
 
@@ -72,11 +80,16 @@ def dashboard():
         return redirect(url_for("login"))
     return render_template("dashboard.html", username=sess["username"], role=sess["role"])
 
+
 @app.route("/logout")
 def logout():
     response = make_response(redirect(url_for("index")))
     clear_session(response)
     return response
+
+@app.route("/error")
+def error():
+    return render_template("error.html")
 
 @app.route("/record", methods=["GET", "POST"])
 def record():
@@ -123,5 +136,6 @@ def search():
         conn.close()
     return render_template("search.html", results=results)
 
+# Disabled debug mode and set a single host
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    app.run(debug=False, host="127.0.0.1", port=5000)

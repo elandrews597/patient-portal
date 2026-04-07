@@ -4,7 +4,6 @@ HEAD
 ## Environment Setup
 
 ### Step 1: Verify Python and Setup Virtual Environment
-
 ```
 python3 --version
 python3 -m venv venv
@@ -16,10 +15,12 @@ Windows:
 ```
 macOS/Linux:
 ```
+
 source venv/bin/activate
 ```
 
 ### Step 2: Install Requirements
+
 ```
 python3 -m pip install -r requirements.txt
 ```
@@ -31,3 +32,4 @@ python3 app.py
 
 Then open your browser and go to: http://localhost:5000
 490ad8b9293fc650b6ed9140e51493930218ab90
+
