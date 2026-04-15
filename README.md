@@ -31,5 +31,4 @@ python3 app.py
 ```
 
 Then open your browser and go to: http://localhost:5000
-490ad8b9293fc650b6ed9140e51493930218ab90
 
