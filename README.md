@@ -1,4 +1,3 @@
-HEAD
 # Patient Portal - Hardened Version
 
 ## Environment Setup
