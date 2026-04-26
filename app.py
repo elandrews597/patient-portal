@@ -3,7 +3,7 @@ from logging import exception
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
-from flask import Flask, render_template, request, redirect, url_for, session, make_response
+from flask import Flask, render_template, request, redirect, url_for, session, make_response, send_from_directory
 # added hash import from werkzeug security
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -126,6 +126,26 @@ def search():
         results = conn.execute("SELECT * FROM patients WHERE full_name LIKE ?", ('%' + query + '%',)).fetchall()
         conn.close()
     return render_template("search.html", results=results)
+
+@app.route("/attacks/csrf")
+def csrf_attack():
+    return send_from_directory('attacks', 'CSRF.html')
+
+@app.route("/record/<int:record_id>")
+def view_record(record_id):
+    sess = get_session()
+    if "user_id" not in sess:
+        return redirect(url_for("login"))
+    conn = database.get_db()
+    record = conn.execute("SELECT * FROM patients WHERE id = " + str(record_id)).fetchone()
+    conn.close()
+    if record:
+        return render_template("view_record.html", record=record)
+    return "Record not found", 404
+
+@app.route("/attacks/idor")
+def idor_attack():
+    return send_from_directory('attacks', 'IDOR.html')
 
 # Disabled debug mode and set a single host
 if __name__ == "__main__":
