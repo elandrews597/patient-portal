@@ -1,4 +1,6 @@
 from logging import exception
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 from flask import Flask, render_template, request, redirect, url_for, session
 # added hash import from werkzeug security
@@ -9,6 +11,7 @@ import json
 import base64
 
 app = Flask(__name__)
+limiter = Limiter(get_remote_address, app=app, default_limits=["200 per day", "50 per hour"])
 
 def get_session():
     cookie = request.cookies.get("session_data")
@@ -55,6 +58,7 @@ def register():
     return render_template("register.html")
 
 @app.route("/login", methods=["GET", "POST"])
+@limiter.limit("10 per minute")
 def login():
     if request.method == "POST":
         username = request.form["username"]
