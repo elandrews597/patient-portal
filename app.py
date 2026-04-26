@@ -1,4 +1,5 @@
 from logging import exception
+# added the flask limiter imports
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
@@ -11,6 +12,7 @@ import json
 import base64
 
 app = Flask(__name__)
+# impplemented limiter; tracks IP address, sets limits per day
 limiter = Limiter(get_remote_address, app=app, default_limits=["200 per day", "50 per hour"])
 
 def get_session():
@@ -58,6 +60,7 @@ def register():
     return render_template("register.html")
 
 @app.route("/login", methods=["GET", "POST"])
+# implemented number of logins per minute
 @limiter.limit("10 per minute")
 def login():
     if request.method == "POST":
