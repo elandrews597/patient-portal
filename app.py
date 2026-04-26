@@ -9,10 +9,12 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 import database
 # removed unnecessary imports
+# json, Base64
 
 app = Flask(__name__)
+# Flask secret key
 app.secret_key = "8f42a73054b1749f8f58848be5e6502c"
-# impplemented limiter; tracks IP address, sets limits per day
+# implemented limiter; tracks IP address, sets limits per day
 limiter = Limiter(get_remote_address, app=app, default_limits=["200 per day", "50 per hour"])
 
 @app.route("/")
@@ -72,7 +74,7 @@ def dashboard():
 
 @app.route("/logout")
 def logout():
-    # FIXED: Using Flask's session.clear() instead of custom cookie deletion
+    # Using Flask's session.clear() instead of custom cookie deletion
     session.clear()
     return redirect(url_for("index"))
 
@@ -81,6 +83,7 @@ def error():
     return render_template("error.html")
 
 @app.route("/record", methods=["GET", "POST"])
+#Using flask's session
 def record():
     if "user_id" not in session:
         return redirect(url_for("login"))
@@ -98,6 +101,7 @@ def record():
     return render_template("record.html")
 
 @app.route("/admin")
+#Using flask's session
 def admin():
     if "user_id" not in session:
         return redirect(url_for("login"))
@@ -109,6 +113,7 @@ def admin():
     return render_template("admin.html", records=records)
 
 @app.route("/search", methods=["GET", "POST"])
+#Using flask's session
 def search():
     if "user_id" not in session:
         return redirect(url_for("login"))
