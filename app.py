@@ -102,7 +102,7 @@ def record():
         diagnosis = request.form["diagnosis"]
         notes = request.form["notes"]
         conn = database.get_db()
-        # Used parameterized query to prevent SQL injection
+        # Used parameterized query to prevent SQL injection(?)
         conn.execute("INSERT INTO patients (user_id, full_name, date_of_birth, diagnosis, notes) VALUES (?, ?, ?, ?, ?)", (session["user_id"], full_name, date_of_birth, diagnosis, notes))
         conn.commit()
         conn.close()
@@ -130,7 +130,7 @@ def search():
     if request.method == "POST":
         query = request.form["query"]
         conn = database.get_db()
-        # parameterized query prevents SQL injection
+        # parameterized query prevents SQL injection(?)
         # User input is treated as data, not SQL code (' OR '1'='1 will pass as a string not SQL code)
         results = conn.execute("SELECT * FROM patients WHERE full_name LIKE ?", ('%' + query + '%',)).fetchall()
         conn.close()
