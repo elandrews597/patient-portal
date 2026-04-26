@@ -3,36 +3,17 @@ from logging import exception
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
-from flask import Flask, render_template, request, redirect, url_for, session
+from flask import Flask, render_template, request, redirect, url_for, session, make_response
 # added hash import from werkzeug security
 from werkzeug.security import generate_password_hash, check_password_hash
 
 import database
-import json
-import base64
+# removed unnecessary imports
 
 app = Flask(__name__)
+app.secret_key = "8f42a73054b1749f8f58848be5e6502c"
 # impplemented limiter; tracks IP address, sets limits per day
 limiter = Limiter(get_remote_address, app=app, default_limits=["200 per day", "50 per hour"])
-
-def get_session():
-    cookie = request.cookies.get("session_data")
-    if cookie:
-        try:
-            decoded = base64.b64decode(cookie).decode("utf-8")
-            return json.loads(decoded)
-        except Exception:
-            return {}
-    return {}
-
-def set_session(response, data):
-    encoded = base64.b64encode(json.dumps(data).encode("utf-8")).decode("utf-8")
-    response.set_cookie("session_data", encoded)
-    return response
-
-def clear_session(response):
-    response.delete_cookie("session_data")
-    return response
 
 @app.route("/")
 def index():
@@ -80,19 +61,20 @@ def login():
             return render_template("login.html", error="Invalid username or password")
     return render_template("login.html")
 
+
 @app.route("/dashboard")
+#replaced sess = get_session() and all sess[] with Flask's built in session
 def dashboard():
-    sess = get_session()
-    if "user_id" not in sess:
+    if "user_id" not in session:
         return redirect(url_for("login"))
-    return render_template("dashboard.html", username=sess["username"], role=sess["role"])
+    return render_template("dashboard.html", username=session["username"], role=session["role"])
 
 
 @app.route("/logout")
 def logout():
-    response = make_response(redirect(url_for("index")))
-    clear_session(response)
-    return response
+    # FIXED: Using Flask's session.clear() instead of custom cookie deletion
+    session.clear()
+    return redirect(url_for("index"))
 
 @app.route("/error")
 def error():
@@ -100,8 +82,7 @@ def error():
 
 @app.route("/record", methods=["GET", "POST"])
 def record():
-    sess = get_session()
-    if "user_id" not in sess:
+    if "user_id" not in session:
         return redirect(url_for("login"))
     if request.method == "POST":
         full_name = request.form["full_name"]
@@ -118,10 +99,9 @@ def record():
 
 @app.route("/admin")
 def admin():
-    sess = get_session()
-    if "user_id" not in sess:
+    if "user_id" not in session:
         return redirect(url_for("login"))
-    if sess["role"] != "admin":
+    if session["role"] != "admin":
         return redirect(url_for("dashboard"))
     conn = database.get_db()
     records = conn.execute("SELECT * FROM patients").fetchall()
@@ -130,8 +110,7 @@ def admin():
 
 @app.route("/search", methods=["GET", "POST"])
 def search():
-    sess = get_session()
-    if "user_id" not in sess:
+    if "user_id" not in session:
         return redirect(url_for("login"))
     results = []
     if request.method == "POST":
