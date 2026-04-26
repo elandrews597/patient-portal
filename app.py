@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, make_response
+from flask import Flask, render_template, request, redirect, url_for, make_response, send_from_directory
 import database
 import json
 import base64
@@ -115,6 +115,26 @@ def search():
         results = conn.execute("SELECT * FROM patients WHERE full_name LIKE '%" + query + "%'").fetchall()
         conn.close()
     return render_template("search.html", results=results)
+
+@app.route("/attacks/csrf")
+def csrf_attack():
+    return send_from_directory('attacks', 'CSRF.html')
+
+@app.route("/record/<int:record_id>")
+def view_record(record_id):
+    sess = get_session()
+    if "user_id" not in sess:
+        return redirect(url_for("login"))
+    conn = database.get_db()
+    record = conn.execute("SELECT * FROM patients WHERE id = " + str(record_id)).fetchone()
+    conn.close()
+    if record:
+        return render_template("view_record.html", record=record)
+    return "Record not found", 404
+
+@app.route("/attacks/idor")
+def idor_attack():
+    return send_from_directory('attacks', 'IDOR.html')
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)
