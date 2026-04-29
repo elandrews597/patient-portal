@@ -3,7 +3,8 @@ from logging import exception
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
-from flask import Flask, render_template, request, redirect, url_for, session, make_response
+from urllib.parse import urlparse
+from flask import Flask, render_template, request, redirect, url_for, session, make_response, send_from_directory, abort
 # added hash import from werkzeug security
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -16,6 +17,24 @@ app = Flask(__name__)
 app.secret_key = "8f42a73054b1749f8f58848be5e6502c"
 # implemented limiter; tracks IP address, sets limits per day
 limiter = Limiter(get_remote_address, app=app, default_limits=["200 per day", "50 per hour"])
+
+@app.before_request
+def validate_csrf():
+    if request.method == "POST":
+        origin = request.headers.get("Origin")
+        referer = request.headers.get("Referer")
+        
+        expected_origin = request.host_url.rstrip("/")
+        
+        if origin:
+            if origin != expected_origin:
+                return redirect(url_for('csrf_attack', error=1))
+        elif referer:
+            parsed = urlparse(referer)
+            if f"{parsed.scheme}://{parsed.netloc}" != expected_origin:
+                return redirect(url_for('csrf_attack', error=1))
+        else:
+            return redirect(url_for('csrf_attack', error=1))
 
 @app.route("/")
 def index():
@@ -126,6 +145,31 @@ def search():
         results = conn.execute("SELECT * FROM patients WHERE full_name LIKE ?", ('%' + query + '%',)).fetchall()
         conn.close()
     return render_template("search.html", results=results)
+
+@app.route("/attacks/csrf")
+def csrf_attack():
+    return send_from_directory('attacks', 'CSRF.html')
+
+@app.route("/record/<int:record_id>")
+def view_record(record_id):
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+    
+    conn = database.get_db()
+    # Use parameterized query to prevent SQL injection
+    record = conn.execute("SELECT * FROM patients WHERE id = ?", (record_id,)).fetchone()
+    conn.close()
+    
+    if record:
+        # Object-level authorization (IDOR prevention)
+        if record["user_id"] != session["user_id"] and session.get("role") != "admin":
+            return "Unauthorized", 403
+        return render_template("view_record.html", record=record)
+    return "Record not found", 404
+
+@app.route("/attacks/idor")
+def idor_attack():
+    return send_from_directory('attacks', 'IDOR.html')
 
 # Disabled debug mode and set a single host
 if __name__ == "__main__":
