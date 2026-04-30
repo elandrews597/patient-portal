@@ -1,8 +1,28 @@
-from flask import Flask, render_template, request, redirect, url_for, session
+from flask import Flask, render_template, request, redirect, url_for, make_response, send_from_directory
 import database
+import json
+import base64
 
 app = Flask(__name__)
-app.secret_key = "supersecretkey"
+
+def get_session():
+    cookie = request.cookies.get("session_data")
+    if cookie:
+        try:
+            decoded = base64.b64decode(cookie).decode("utf-8")
+            return json.loads(decoded)
+        except Exception:
+            return {}
+    return {}
+
+def set_session(response, data):
+    encoded = base64.b64encode(json.dumps(data).encode("utf-8")).decode("utf-8")
+    response.set_cookie("session_data", encoded)
+    return response
+
+def clear_session(response):
+    response.delete_cookie("session_data")
+    return response
 
 @app.route("/")
 def index():
@@ -14,8 +34,6 @@ def register():
         username = request.form["username"]
         password = request.form["password"]
         conn = database.get_db()
-        # Password stored in plaintext, not hashes
-        # Code being String allows for SQL injection
         conn.execute("INSERT INTO users (username, password, role) VALUES ('" + username + "', '" + password + "', 'patient')")
         conn.commit()
         conn.close()
@@ -28,33 +46,38 @@ def login():
         username = request.form["username"]
         password = request.form["password"]
         conn = database.get_db()
-        # Strings allow SQL authentication bypass
-        # Password compared in plaintext(should be compared hash)
         user = conn.execute("SELECT * FROM users WHERE username = '" + username + "' AND password = '" + password + "'").fetchone()
         conn.close()
         if user:
-            session["user_id"] = user["id"]
-            session["username"] = user["username"]
-            session["role"] = user["role"]
-            return redirect(url_for("dashboard"))
+            session_data = {
+                "user_id": user["id"],
+                "username": user["username"],
+                "role": user["role"]
+            }
+            response = make_response(redirect(url_for("dashboard")))
+            set_session(response, session_data)
+            return response
         else:
             return render_template("login.html", error="Invalid username or password")
     return render_template("login.html")
 
 @app.route("/dashboard")
 def dashboard():
-    if "user_id" not in session:
+    sess = get_session()
+    if "user_id" not in sess:
         return redirect(url_for("login"))
-    return render_template("dashboard.html", username=session["username"], role=session["role"])
+    return render_template("dashboard.html", username=sess["username"], role=sess["role"])
 
 @app.route("/logout")
 def logout():
-    session.clear()
-    return redirect(url_for("index"))
+    response = make_response(redirect(url_for("index")))
+    clear_session(response)
+    return response
 
 @app.route("/record", methods=["GET", "POST"])
 def record():
-    if "user_id" not in session:
+    sess = get_session()
+    if "user_id" not in sess:
         return redirect(url_for("login"))
     if request.method == "POST":
         full_name = request.form["full_name"]
@@ -62,8 +85,7 @@ def record():
         diagnosis = request.form["diagnosis"]
         notes = request.form["notes"]
         conn = database.get_db()
-        # String allows for SQL injection
-        conn.execute("INSERT INTO patients (user_id, full_name, date_of_birth, diagnosis, notes) VALUES (" + str(session["user_id"]) + ", '" + full_name + "', '" + date_of_birth + "', '" + diagnosis + "', '" + notes + "')")
+        conn.execute("INSERT INTO patients (user_id, full_name, date_of_birth, diagnosis, notes) VALUES (" + str(sess["user_id"]) + ", '" + full_name + "', '" + date_of_birth + "', '" + diagnosis + "', '" + notes + "')")
         conn.commit()
         conn.close()
         return render_template("record.html", success="Record added successfully!")
@@ -71,28 +93,48 @@ def record():
 
 @app.route("/admin")
 def admin():
-    if "user_id" not in session:
+    sess = get_session()
+    if "user_id" not in sess:
         return redirect(url_for("login"))
-    if session["role"] != "admin":
+    if sess["role"] != "admin":
         return redirect(url_for("dashboard"))
     conn = database.get_db()
     records = conn.execute("SELECT * FROM patients").fetchall()
     conn.close()
     return render_template("admin.html", records=records)
-    
+
 @app.route("/search", methods=["GET", "POST"])
 def search():
-    if "user_id" not in session:
+    sess = get_session()
+    if "user_id" not in sess:
         return redirect(url_for("login"))
     results = []
     if request.method == "POST":
         query = request.form["query"]
         conn = database.get_db()
-        # String allows for SQL injection
-        # Attacker can aqcuire all information by using a UNION attack
         results = conn.execute("SELECT * FROM patients WHERE full_name LIKE '%" + query + "%'").fetchall()
         conn.close()
     return render_template("search.html", results=results)
+
+@app.route("/attacks/csrf")
+def csrf_attack():
+    return send_from_directory('attacks', 'CSRF.html')
+
+@app.route("/record/<int:record_id>")
+def view_record(record_id):
+    sess = get_session()
+    if "user_id" not in sess:
+        return redirect(url_for("login"))
+    conn = database.get_db()
+    record = conn.execute("SELECT * FROM patients WHERE id = " + str(record_id)).fetchone()
+    conn.close()
+    if record:
+        return render_template("view_record.html", record=record)
+    return "Record not found", 404
+
+@app.route("/attacks/idor")
+def idor_attack():
+    return send_from_directory('attacks', 'IDOR.html')
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)
