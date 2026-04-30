@@ -19,6 +19,7 @@ python3 -m pip install -r requirements.txt
 
 ### Step 3: Run Flask
 
+python3 setup.py
 python3 app.py
 
 Then open your browser and go to: http://localhost:5000
