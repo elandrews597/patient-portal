@@ -18,9 +18,13 @@ conn = database.get_db()
 if branch == "hardened-version":
     # Hardened version uses hashed passwords
     conn.execute("INSERT INTO users (username, password, role) VALUES (?, ?, ?)",
-                ('testuser', generate_password_hash('password123'), 'patient'))
+            ('testuser', generate_password_hash('password123'), 'patient'))
     conn.execute("INSERT INTO users (username, password, role) VALUES (?, ?, ?)",
-                ('admin', generate_password_hash('admin123'), 'admin'))
+            ('admin', generate_password_hash('admin123'), 'admin'))
+    conn.execute("INSERT INTO users (username, password, role) VALUES (?, ?, ?)",
+            ('jackball', generate_password_hash('password345'), 'patient'))
+    conn.execute("INSERT INTO users (username, password, role) VALUES (?, ?, ?)",
+            ('bigjane', generate_password_hash('bigjane123'), 'patient'))
     print("Hardened database created with hashed passwords!")
 else:
     # Vulnerable version uses plain text passwords
